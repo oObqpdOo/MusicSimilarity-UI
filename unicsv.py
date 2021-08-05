@@ -11,9 +11,12 @@ The original implementations were largely copied from
 import codecs
 import csv
 import fnmatch
-from io import StringIO
+try:
+    from StringIO import StringIO ## for Python 2
+except ImportError:
+    from io import StringIO ## for Python 3
 
-from .exceptions import FieldSizeLimitError
+from exceptions import FieldSizeLimitError
 
 EIGHT_BIT_ENCODINGS = [
     'utf-8', 'u8', 'utf', 'utf8', 'latin-1', 'iso-8859-1', 'iso8859-1', '8859',
@@ -30,7 +33,7 @@ class UTF8Recoder(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def next(self):
         return self.reader.next().encode('utf-8')
 
 
@@ -46,9 +49,9 @@ class UnicodeCSVReader(object):
         if maxfieldsize:
             csv.field_size_limit(maxfieldsize)
 
-    def __next__(self):
+    def next(self):
         try:
-            row = next(self.reader)
+            row = self.reader.next()
         except csv.Error as e:
             # Terrible way to test for this exception, but there is no subclass
             if fnmatch.fnmatch(str(e), 'field large[rt] than field limit *'):
@@ -56,7 +59,7 @@ class UnicodeCSVReader(object):
             else:
                 raise e
 
-        return [str(s, 'utf-8') for s in row]
+        return [unicode(s, 'utf-8') for s in row]
 
     def __iter__(self):
         return self
@@ -89,10 +92,10 @@ class UnicodeCSVWriter(object):
 
     def writerow(self, row):
         if self._eight_bit:
-            self.writer.writerow([str(s if s != None else '')
+            self.writer.writerow([unicode(s if s != None else '')
                     .encode(self.encoding) for s in row])
         else:
-            self.writer.writerow([str(s if s != None else '')
+            self.writer.writerow([unicode(s if s != None else '')
                     .encode('utf-8') for s in row])
             # Fetch UTF-8 output from the queue...
             data = self.queue.getvalue()
@@ -143,4 +146,4 @@ class UnicodeCSVDictWriter(csv.DictWriter):
         self.writer = UnicodeCSVWriter(f, *args, **kwds)
 
         if writeheader:
-            self.writerow(dict(list(zip(self.fieldnames, self.fieldnames))))
+            self.writerow(dict(zip(self.fieldnames, self.fieldnames)))
