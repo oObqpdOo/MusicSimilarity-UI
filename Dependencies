@@ -1,0 +1,9 @@
+UI: 
+pip install pyqt
+
+Feature Extract: 
+pip install numpy
+sudo apt install openmpi-bin
+pip install mpi4py scipy essentia pandas unicsv
+
+
